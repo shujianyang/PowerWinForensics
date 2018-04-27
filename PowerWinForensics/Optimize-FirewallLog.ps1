@@ -38,6 +38,7 @@ function binarySearch ([string[]] $array, [datetime] $time)
 }
 
 function Optimize-FirewallLog {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string[]] $LogPath,
@@ -50,7 +51,6 @@ function Optimize-FirewallLog {
     $fileName
     $logTime
     foreach ($log in $fullLogPaths) {
-        #$entries = Get-Content -Path $log | Select-Object -Skip 5
         $entries = Get-Content -Path $log | Where-Object {$_ -match '^\d{4}-\d{2}-\d{2} '}
 
         $logStartTime = [datetime]($entries[0].subString(0,19))
@@ -77,7 +77,7 @@ function Optimize-FirewallLog {
         $fileName = $Prefix + $logTime.ToString("yyyyMMdd_HHmm") + ".log"
         $filePath = Join-Path -Path $outputPath -ChildPath $fileName
         $output | Out-File -FilePath $filePath -Encoding 'ascii' -Append
-        Write-Host "Log appended to $filePath"
+        Write-Verbose "Log appended to $filePath"
 
         if($pointer -gt ($indexs.Length-2)) {continue}
         $pointer..($indexs.Length-2) | ForEach-Object {
@@ -88,7 +88,7 @@ function Optimize-FirewallLog {
             $fileName = $Prefix + $logTime.ToString("yyyyMMdd_HHmm") + ".log"
             $filePath = Join-Path -Path $outputPath -ChildPath $fileName
             $output | Out-File -FilePath $filePath -Encoding 'ascii'
-            Write-Host "Log re-written to $filePath"
+            Write-Verbose "Log re-written to $filePath"
         }
     }
 }

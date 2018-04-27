@@ -16,19 +16,18 @@ function Copy-FirewallLog {
     Where the firewall logs will be downloaded. Set as the current folder by default.
     .PARAMETER Credential
     Credential used to access hosts. If not assigned, the current user will be used.
-    Note if UseDifferentCredentials switch is turned on, the Credential entered here
-    will be ignored.
     .PARAMETER UseDifferentCredentials
-    By default the cmdlet asks for credential just once. This credential will be used
-    to access all hosts in the list. If you want to use different credentials for different
-    hosts, turn on this switch.
+    Use this option if different credentials for different hosts are needed.
     #>
 
+    [CmdletBinding(DefaultParameterSetName='SameCred')]
     param (
         [string[]] $ComputerName = $env:COMPUTERNAME,
         [string] $LogPath = 'C:\Windows\System32\LogFiles\Firewall\pfirewall.log.old',
         [string] $OutputPath = '.\',
+        [Parameter(ParameterSetName='SameCred')]
         [PSCredential] $Credential,
+        [Parameter(ParameterSetName='DiffCred')]
         [switch] $UseDifferentCredentials
     )
 
@@ -40,7 +39,7 @@ function Copy-FirewallLog {
     $outputFullPath = Get-Item $outputPath | Select-Object -ExpandProperty FullName
 
     foreach ($Computer in $ComputerName) {
-        if($useDifferentCredentials) {
+        if($PSCmdlet.ParameterSetName -eq 'DiffCred') {
             $Credential = Get-Credential
         }
         if($Credential) { #Use entered credential.

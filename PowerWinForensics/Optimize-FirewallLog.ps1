@@ -1,4 +1,4 @@
-
+#Split a time span into different periods.
 function getSplitPoints {
     param(
         [datetime] $startTime,
@@ -7,23 +7,35 @@ function getSplitPoints {
         [int] $interval
     )
 
-    $intervalCount = [int](($startTime.Hour - $beginHour) / $interval)
-    $splitTimes = $startTime.Date.AddHours($beginHour).AddHours(($intervalCount+1)*$interval)
-    <#if($startTime.Hour -lt 7) {
-        $splitTimes = $startTime.Date.AddHours(7)
+    $splitPoint = $startTime.Date.AddHours($beginHour % $interval)
+    while($splitPoint -le $startTime) {
+        $splitPoint = $splitPoint.AddHours($interval)
     }
-    elseIf($startTime.Hour -ge 19) {
-        $splitTimes = $startTime.Date.AddDays(1).AddHours(7)
-    }
-    else {
-        $splitTimes = $startTime.Date.AddHours(19)
-    }#>
-    while ($splitTimes -lt $endTime) {
-        $splitTimes
-        $splitTimes = $splitTimes.AddHours(12)
+    while($splitPoint -lt $endTime) {
+        $splitPoint
+        $splitPoint = $splitPoint.AddHours($interval)
     }
 }
 
+#Identify whether two time points are in same period.
+function inSameTimePeriod {
+    param(
+        [datetime] $earlyTime,
+        [datetime] $lateTime,
+        [int] $beginHour,
+        [int] $interval
+    )
+
+    if(($lateTime - $earlyTime).Hours -gt $interval) { return $false }
+
+    $splitPoint = $earlyTime.Date.AddHours($beginHour % $interval)
+    while($splitPoint -le $earlyTime) {
+        $splitPoint = $splitPoint.AddHours($interval)
+    }
+    return $splitPoint -gt $lateTime
+}
+
+#Binary search to find the index of the first entry with the given time in a log.
 function binarySearch ([string[]] $array, [datetime] $time)
 {
     $begin = 0
@@ -61,7 +73,7 @@ function Optimize-FirewallLog {
     Where the firewall logs will be downloaded. Set as the current folder by default.
     .PARAMETER Prefix
     Prefix to the generated logs.
-    .PARAMETER BeginTime
+    .PARAMETER BeginHour
     The hour of a day where the logs will be splitted.
     .PARAMETER Interval
     The length of time the firewall logs contain in hours.
@@ -73,7 +85,7 @@ function Optimize-FirewallLog {
         [string[]] $LogPath,
         [string] $OutputPath = '.\',
         [string] $Prefix = 'FirewallLog_',
-        [int] $BeginTime = 7,
+        [int] $BeginHour = 7,
         [int] $Interval = 12
     )
 
@@ -81,45 +93,50 @@ function Optimize-FirewallLog {
 
     $fileName
     $logTime
+    $preLogEndTime = $null
     foreach ($log in $fullLogPaths) {
         $entries = Get-Content -Path $log | Where-Object {$_ -match '^\d{4}-\d{2}-\d{2} '}
 
         $logStartTime = [datetime]($entries[0].subString(0,19))
         $logEndTime = [datetime]($entries[$entries.Length-1].subString(0,19))
-        if( -not $logTime) {
-            $logTime = $logStartTime
-            $fileName = $Prefix + $logTime.ToString("yyyyMMdd_HHmm") + ".log"
-            $filePath = Join-Path -Path $outputPath -ChildPath $fileName
-            if(Test-Path $filePath -PathType Leaf) {
-                Remove-Item $filePath
-            }
-        }
 
-        $splitTimes = getSplitPoints $logStartTime $logEndTime $BeginTime $Interval
+        $splitTimes = getSplitPoints $logStartTime $logEndTime $BeginHour $Interval
 
-        $indexs = (,0)
+        $splitIndexs = (,0)
         foreach( $bp in $splitTimes ) {
-            $indexs += binarySearch $entries $bp
+            $splitIndexs += binarySearch $entries $bp
         }
-        $indexs += $entries.Length
+        $splitIndexs += $entries.Length
 
         $pointer = 1
-        [string[]]$output = $entries[0..($indexs[$pointer]-1)]
-        $fileName = $Prefix + $logTime.ToString("yyyyMMdd_HHmm") + ".log"
-        $filePath = Join-Path -Path $outputPath -ChildPath $fileName
-        $output | Out-File -FilePath $filePath -Encoding 'ascii' -Append
-        Write-Verbose "Log appended to $filePath"
+        [string[]]$output = $entries[0..($splitIndexs[$pointer]-1)]
+        if($preLogEndTime) {
+            $sameTimePeriod = inSameTimePeriod $preLogEndTime $logStartTime $BeginHour $Interval
+        }
+        if($preLogEndTime -and $sameTimePeriod) {
+            $fileName = $Prefix + $logTime.ToString("yyyyMMdd_HHmm") + ".log"
+            $filePath = Join-Path -Path $outputPath -ChildPath $fileName
+            $output | Out-File -FilePath $filePath -Encoding 'ascii' -Append
+            Write-Verbose "Log appended to $filePath"
+        }
+        else {
+            $fileName = $Prefix + $logStartTime.ToString("yyyyMMdd_HHmm") + ".log"
+            $filePath = Join-Path -Path $outputPath -ChildPath $fileName
+            $output | Out-File -FilePath $filePath -Encoding 'ascii'
+            Write-Verbose "Log written to $filePath"
+        }
 
-        if($pointer -gt ($indexs.Length-2)) {continue}
-        $pointer..($indexs.Length-2) | ForEach-Object {
-            $output = $entries[$indexs[$_]..($indexs[$_+1]-1)]
+        if($pointer -gt ($splitIndexs.Length-2)) {continue}
+        $pointer..($splitIndexs.Length-2) | ForEach-Object {
+            $output = $entries[$splitIndexs[$_]..($splitIndexs[$_+1]-1)]
             if($splitTimes) {
                 $logTime = $splitTimes[$_-1]
             }
             $fileName = $Prefix + $logTime.ToString("yyyyMMdd_HHmm") + ".log"
             $filePath = Join-Path -Path $outputPath -ChildPath $fileName
             $output | Out-File -FilePath $filePath -Encoding 'ascii'
-            Write-Verbose "Log re-written to $filePath"
+            Write-Verbose "Log written to $filePath"
         }
+        $preLogEndTime = $logEndTime
     }
 }

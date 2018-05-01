@@ -57,26 +57,27 @@ function binarySearch ([string[]] $array, [datetime] $time)
     return $mid
 }
 
-function Optimize-FirewallLog {
+function Group-FirewallLog {
     <#
     .SYNOPSIS
-    Generate new firewall logs based by self-defined time periods from exsisting firewall logs.
+    Read existing firewall logs and generate new ones grouped by different time periods.
     .DESCRIPTION
-    This function generate firewall logs by the timestamps.
+    This function generate firewall log entries and split them into different groups(files) 
+    by timestamps.
 
-    For example, the firewall logs can be optimized into several files. Each one contains
-    four-hour long logs.
+    For example, the firewall logs can be split into several files. Each file contains
+    entries of four-hour long.
 
     .PARAMETER LogPath
     Path to Windows firewall logs.
     .PARAMETER OutputPath
-    Where the firewall logs will be downloaded. Set as the current folder by default.
+    Where the grouped logs will be generated. Set as the current folder by default.
     .PARAMETER Prefix
     Prefix to the generated logs.
     .PARAMETER BeginHour
-    The hour of a day where the logs will be splitted.
+    At which hour of a day the logs will be splitted.
     .PARAMETER Interval
-    The length of time the firewall logs contain in hours.
+    The length of time the grouped firewall logs contain in hours.
     #>
 
     [CmdletBinding()]
@@ -85,7 +86,10 @@ function Optimize-FirewallLog {
         [string[]] $LogPath,
         [string] $OutputPath = '.\',
         [string] $Prefix = 'FirewallLog_',
+        [ValidateRange(0,23)]
         [int] $BeginHour = 7,
+        [Validatescript({ 24 % $_ -eq 0})]
+        [ValidateRange(0,24)]
         [int] $Interval = 12
     )
 

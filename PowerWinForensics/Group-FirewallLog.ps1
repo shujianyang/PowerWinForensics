@@ -1,62 +1,3 @@
-#Split a time span into different periods.
-function getSplitPoints {
-    param(
-        [datetime] $startTime,
-        [datetime] $endTime,
-        [int] $beginHour,
-        [int] $interval
-    )
-
-    $splitPoint = $startTime.Date.AddHours($beginHour % $interval)
-    while($splitPoint -le $startTime) {
-        $splitPoint = $splitPoint.AddHours($interval)
-    }
-    while($splitPoint -lt $endTime) {
-        $splitPoint
-        $splitPoint = $splitPoint.AddHours($interval)
-    }
-}
-
-#Identify whether two time points are in same period.
-function inSameTimePeriod {
-    param(
-        [datetime] $earlyTime,
-        [datetime] $lateTime,
-        [int] $beginHour,
-        [int] $interval
-    )
-
-    if(($lateTime - $earlyTime).Hours -gt $interval) { return $false }
-
-    $splitPoint = $earlyTime.Date.AddHours($beginHour % $interval)
-    while($splitPoint -le $earlyTime) {
-        $splitPoint = $splitPoint.AddHours($interval)
-    }
-    return $splitPoint -gt $lateTime
-}
-
-#Binary search to find the index of the first entry with the given time in a log.
-function binarySearch ([string[]] $array, [datetime] $time)
-{
-    $begin = 0
-    $end = $array.Length-1
-    while ($begin -le $end) {
-        $mid = [int](($begin+$end)/2)
-        $midtime = [datetime]($array[$mid].Substring(0,19))
-        $midtimePre = [datetime]($array[$mid-1].Substring(0,19))
-        if (($midtime -ge $time) -and ($midtimePre -lt $time)) {
-            return $mid
-        }
-        if($midtime -lt $time) {
-            $begin = $mid + 1
-        }
-        else {
-            $end = $mid - 1
-        }
-    }
-    return $mid
-}
-
 function Group-FirewallLog {
     <#
     .SYNOPSIS
@@ -143,4 +84,63 @@ function Group-FirewallLog {
         }
         $preLogEndTime = $logEndTime
     }
+}
+
+#Split a time span into different periods.
+function getSplitPoints {
+    param(
+        [datetime] $startTime,
+        [datetime] $endTime,
+        [int] $beginHour,
+        [int] $interval
+    )
+
+    $splitPoint = $startTime.Date.AddHours($beginHour % $interval)
+    while($splitPoint -le $startTime) {
+        $splitPoint = $splitPoint.AddHours($interval)
+    }
+    while($splitPoint -lt $endTime) {
+        $splitPoint
+        $splitPoint = $splitPoint.AddHours($interval)
+    }
+}
+
+#Identify whether two time points are in same period.
+function inSameTimePeriod {
+    param(
+        [datetime] $earlyTime,
+        [datetime] $lateTime,
+        [int] $beginHour,
+        [int] $interval
+    )
+
+    if(($lateTime - $earlyTime).Hours -gt $interval) { return $false }
+
+    $splitPoint = $earlyTime.Date.AddHours($beginHour % $interval)
+    while($splitPoint -le $earlyTime) {
+        $splitPoint = $splitPoint.AddHours($interval)
+    }
+    return $splitPoint -gt $lateTime
+}
+
+#Binary search to find the index of the first entry with the given time in a log.
+function binarySearch ([string[]] $array, [datetime] $time)
+{
+    $begin = 0
+    $end = $array.Length-1
+    while ($begin -le $end) {
+        $mid = [int](($begin+$end)/2)
+        $midtime = [datetime]($array[$mid].Substring(0,19))
+        $midtimePre = [datetime]($array[$mid-1].Substring(0,19))
+        if (($midtime -ge $time) -and ($midtimePre -lt $time)) {
+            return $mid
+        }
+        if($midtime -lt $time) {
+            $begin = $mid + 1
+        }
+        else {
+            $end = $mid - 1
+        }
+    }
+    return $mid
 }

@@ -117,16 +117,18 @@ function ConvertTo-IPReport {
             $country = '(internal)'
             $region = ''
             $city = ''
-            if( -not ($ipAddress.StartsWith('192.168'))) {
+            if( -not (isPrivateAddress $ipAddress)) {
                 if($DisableIPLocation) {
                     $country = '(external)'
                 }
                 else {
                     $url = "http://freegeoip.net/json/$ipAddress"
                     $location = Invoke-RestMethod -Method GET -Uri $url
-                    $country = $location.country_name
-                    $region = $location.region_name
-                    $city = $location.city
+                    if ($location) {
+                        $country = $location.country_name
+                        $region = $location.region_name
+                        $city = $location.city
+                    }
                 }
             }
 
@@ -176,7 +178,7 @@ function ConvertTo-IPReport {
             $worksheet.Cells.Item($row,5) = $ip.Count
             $row++
 
-            if( ($ip.IP).StartsWith('192.168') ) {
+            if( isPrivateAddress $ip.IP ) {
                 $internalCount += $ip.Count
             }
             else {
@@ -274,4 +276,14 @@ function ConvertTo-IPReport {
     $workbook.Close()
     $excel.Quit()
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+}
+
+function isPrivateAddress([string] $ip)
+{
+    $octets = [int[]]$ip.Split('.')
+    $first = $octets[0]
+    $second = $octets[1]
+    return ($first -eq 10) -or `
+            (($first -eq 172) -and ($second -in 16..31)) -or `
+            (($first -eq 192) -and ($second -eq 168))
 }

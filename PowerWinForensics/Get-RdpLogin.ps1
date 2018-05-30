@@ -1,11 +1,30 @@
 function Get-RdpLogin {
+    <#
+    .SYNOPSIS
+    Read Windows remote desktop log and list connections.
+    .DESCRIPTION
+    This function reads Windows Remote Desktop log and list all succuessful connections and
+    related information, including usernames and IP addresses.
+    .PARAMETER ComputerName
+    Names of hosts on which remote desktop connection is allowed.
+    .PARAMETER Credential
+    Credential used to access hosts. If not assigned, the current user will be used.
+    .PARAMETER MaxEvents
+    Maximun records in the event log to read.
+    #>
+
     param (
         [string]$ComputerName = $env:COMPUTERNAME,
         [PSCredential] $Credential,
         [int]$MaxEvents = 0
     )
 
-    $session = New-PSSession -ComputerName $ComputerName -Credential $Credential
+    if ($Credential) {
+        $session = New-PSSession -ComputerName $ComputerName -Credential $Credential
+    }
+    else {
+        $session = New-PSSession -ComputerName $ComputerName
+    }
 
     try {
         $ScrBlock = {

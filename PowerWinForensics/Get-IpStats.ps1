@@ -1,12 +1,11 @@
-function Get-IpStatistics {
+function Get-IpStats {
     <#
     .SYNOPSIS
     To read a series of Windows firewall logs and generate IP address statistics.
     .DESCRIPTION
-    This script parses the Windows firewall logs and collect information about date, time, ports,
+    This function parses the Windows firewall logs and collect information about date, time, ports,
     IP addresses.
 
-    The computer running this scipt must have Microsoft Office installed in order to generate report in Excel.
     .PARAMETER LogPath
     Path to logs. Multiple paths or wildcards are allowed.
     .PARAMETER Port
@@ -15,6 +14,8 @@ function Get-IpStatistics {
     .PARAMETER Direction
     The direction of traffic to analyze. Accepatable values are Inbound, Outbound or All.
     Default value is Inbound, meaning only inbound traffic will be analyzed.
+    .PARAMETER MaxCount
+    The number of IPs with highest counts to be listed.
     .PARAMETER DisableIPLocation
     Disable IP location query so all external IP addresses will be diplayed as (external).
     #>
@@ -74,7 +75,13 @@ function Get-IpStatistics {
 
     Write-Verbose "Finding IP address location..."
     $IpList = $IpCount.GetEnumerator()
-    $IpStatistics = ForEach ($IP in $IpList)
+    if ($MaxCount) {
+        $IpList = $IpList | Sort-Object -Property Value -Descending | Select-Object -First $MaxCount
+    }
+    else {
+        $IpList = $IpList | Sort-Object -Property Value -Descending
+    }
+    $IpStats = ForEach ($IP in $IpList)
     {
         $ipAddress = $IP.Name
         $country = '(internal)'
@@ -104,7 +111,7 @@ function Get-IpStatistics {
         $IpObj
     }
 
-    $IpStatistics | Sort-Object -Property Count -Descending
+    $IpStats
 }
 
 function isPrivateAddress([string] $ip)

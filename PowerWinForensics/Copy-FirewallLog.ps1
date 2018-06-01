@@ -28,7 +28,7 @@ function Copy-FirewallLogArchive {
         [Parameter(Position=0)]
         [string[]] $ComputerName = $env:COMPUTERNAME,
         [Parameter(Position=1)]
-        [string] $LogPath = 'C:\Windows\System32\LogFiles\Firewall\pfirewall.log.old',
+        [string] $LogPath = "$env:SystemRoot\System32\LogFiles\Firewall\pfirewall.log.old",
         [Parameter(Position=2)]
         [string] $OutputPath = '.\',
         [Parameter(ParameterSetName='SameCred')]
@@ -111,7 +111,7 @@ function Copy-FirewallLogLatest {
         [Parameter(Position=0)]
         [string[]] $ComputerName = $env:COMPUTERNAME,
         [Parameter(Position=1)]
-        [string] $LogPath = 'C:\Windows\System32\LogFiles\Firewall\pfirewall.log',
+        [string] $LogPath = "$env:SystemRoot\System32\LogFiles\Firewall\pfirewall.log",
         [Parameter(Position=2)]
         [string] $OutputPath = '.\',
         [Parameter(ParameterSetName='SameCred')]

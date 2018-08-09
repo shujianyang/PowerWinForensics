@@ -59,8 +59,6 @@ function ConvertTo-IPReport {
     $excel = New-Object -comobject Excel.Application
     $excel.DisplayAlerts = $false
     $workbook = $excel.Workbooks.Add()
-    $workbook.Worksheets.Item(1).Delete()
-    $workbook.Worksheets.Item(1).Delete()
     $summarySheet = $workbook.Worksheets.Item(1)
     $summarySheet.Name = 'Summary'
 
@@ -200,13 +198,16 @@ function ConvertTo-IPReport {
         $worksheet.Columns.item("C:C").columnwidth=15
         $worksheet.Columns.item("F:F").columnwidth=12
 
+        $xlChartType = [Microsoft.Office.Interop.Excel.XLChartType]
+
         $objCharts = $worksheet.ChartObjects()
         $objChart = $objCharts.Add(500, 50, 500, 300)
         $pieStart = $row + 4
         $pieEnd = $row + 5
         $dataRange = $worksheet.range("A$pieStart`:A$pieEnd, E$pieStart`:E$pieEnd")
         $objChart.Chart.SetSourceData($dataRange, 2)
-        $objChart.Chart.ChartType = 70
+        #$objChart.Chart.ChartType = 70
+        $objChart.Chart.ChartType = [Microsoft.Office.Interop.Excel.XLChartType]::xl3DPieExploded
         $objChart.Chart.ApplyDataLabels(5)
         $objChart.Chart.HasTitle = $true
         $objChart.Chart.ChartTitle.Text = 'Internal and External Connections Ratio'
@@ -216,7 +217,8 @@ function ConvertTo-IPReport {
         $otherRow = $row + 2
         $dataRange = $worksheet.range("A$start`:A$end, E$start`:E$end, A$otherRow`:A$otherRow, E$otherRow`:E$otherRow")
         $objChart.Chart.SetSourceData($dataRange, 2)
-        $objChart.Chart.ChartType = 70
+        #$objChart.Chart.ChartType = 70
+        $objChart.Chart.ChartType = [Microsoft.Office.Interop.Excel.XLChartType]::xl3DPieExploded
         $objChart.Chart.ApplyDataLabels(5)
         $objChart.Chart.HasTitle = $true
         $objChart.Chart.ChartTitle.Text = 'Top 10 Sources of Connections'
@@ -257,16 +259,16 @@ function ConvertTo-IPReport {
     $dataRange = $summarysheet.range("B$rangeTop`:D$rangeBottom")
     $objChart = $objCharts.Add(450, 40, 500, 250)
     $objChart.Chart.SetSourceData($dataRange, 2)
-    #$objChart.Chart.ChartType = [Microsoft.Office.Interop.Excel.XLChartType]::xlLine
-    $objChart.Chart.ChartType = 4
+    #$objChart.Chart.ChartType = 4
+    $objChart.Chart.ChartType = [Microsoft.Office.Interop.Excel.XLChartType]::xlLine
     $objChart.Chart.ApplyDataLabels(5)
     $objChart.Chart.HasTitle = $true
     $objChart.Chart.ChartTitle.Text = 'Connection Counts'
 
     $objChart = $objCharts.Add(450, 330, 500, 250)
     $objChart.Chart.SetSourceData($dataRange, 2)
-    #$objChart.Chart.ChartType = [Microsoft.Office.Interop.Excel.XLChartType]::xlColumnStacked
-    $objChart.Chart.ChartType = 52
+    #$objChart.Chart.ChartType = 52
+    $objChart.Chart.ChartType = [Microsoft.Office.Interop.Excel.XLChartType]::xlColumnStacked
     $objChart.Chart.ApplyDataLabels(5)
     $objChart.Chart.HasTitle = $true
     $objChart.Chart.ChartTitle.Text = 'Total Connection Counts'
